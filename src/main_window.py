@@ -39,8 +39,8 @@ class MainWindow(QMainWindow):
         splitter = QSplitter(Qt.Horizontal)
 
         self.student_form = StudentForm(self.data_manager)
-        self.student_form.setMinimumWidth(320)
-        self.student_form.setMaximumWidth(380)
+        self.student_form.setMinimumWidth(400)
+        self.student_form.setMaximumWidth(450)
 
         self.calendar_view = CalendarView(self.data_manager)
 

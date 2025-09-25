@@ -19,24 +19,30 @@ class ScheduleItem(QFrame):
         self.student = student
         self.drag_start_position = QPoint()
 
-        self.setMinimumHeight(30)
-        self.setMaximumHeight(30)
+        self.setMinimumHeight(32)
+        self.setMaximumHeight(32)
         self.setStyleSheet(f"""
             QFrame {{
-                background-color: {student.color};
-                border: 1px solid #666666;
-                border-radius: 4px;
-                padding: 2px;
+                background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 {student.color}, stop: 1 {self._lighten_color(student.color)});
+                border: none;
+                border-radius: 10px;
+                padding: 2px 4px;
                 margin: 1px;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
             }}
             QFrame:hover {{
-                border: 2px solid #FFFFFF;
-                background-color: {self._lighten_color(student.color)};
+                border: 1px solid rgba(255, 255, 255, 0.4);
+                background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 {self._lighten_color(student.color)}, stop: 1 {student.color});
+                transform: translateY(-1px);
+                box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
             }}
         """)
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(4, 2, 4, 2)
+        layout.setContentsMargins(6, 2, 6, 2)
+        layout.setAlignment(Qt.AlignCenter)
 
         text = f"{student.name} {schedule.week_number}강"
         if schedule.is_completed:
@@ -46,41 +52,50 @@ class ScheduleItem(QFrame):
             text += " 📝"
 
         label = QLabel(text)
+        label.setAlignment(Qt.AlignCenter)
 
         # 완료된 일정은 다른 스타일 적용
         if schedule.is_completed:
             label.setStyleSheet("""
                 color: #FFFFFF;
-                font-weight: bold;
-                font-size: 13px;
-                background: rgba(16, 124, 16, 0.8);
-                border-radius: 2px;
-                padding: 1px 3px;
+                font-weight: 700;
+                font-size: 11px;
+                background: rgba(16, 185, 129, 0.95);
+                border-radius: 4px;
+                padding: 3px 6px;
+                border: none;
+                min-height: 16px;
             """)
             # 완료된 일정의 부모 프레임도 스타일 변경
             self.setStyleSheet(f"""
                 QFrame {{
-                    background-color: {self._darken_color(student.color)};
-                    border: 1px solid #107C10;
-                    border-radius: 4px;
-                    padding: 2px;
+                    background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 {self._darken_color(student.color)}, stop: 1 rgba(16, 185, 129, 0.7));
+                    border: none;
+                    border-radius: 10px;
+                    padding: 2px 4px;
                     margin: 1px;
-                    opacity: 0.7;
+                    opacity: 0.9;
+                    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2);
                 }}
                 QFrame:hover {{
-                    border: 2px solid #107C10;
-                    background-color: {student.color};
+                    border: 1px solid rgba(16, 185, 129, 0.6);
+                    background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 {student.color}, stop: 1 rgba(16, 185, 129, 0.8));
                     opacity: 1.0;
+                    box-shadow: 0 3px 10px rgba(16, 185, 129, 0.25);
                 }}
             """)
         else:
             label.setStyleSheet("""
-                color: #000000;
-                font-weight: bold;
-                font-size: 13px;
-                background: rgba(255, 255, 255, 0.9);
-                border-radius: 2px;
-                padding: 1px 3px;
+                color: #1F2937;
+                font-weight: 700;
+                font-size: 11px;
+                background: rgba(255, 255, 255, 0.95);
+                border-radius: 4px;
+                padding: 3px 6px;
+                border: none;
+                min-height: 16px;
             """)
         label.setWordWrap(True)
         layout.addWidget(label)
@@ -268,14 +283,19 @@ class CalendarView(QWidget):
         self.setup_connections()
 
     def setup_ui(self):
+        # 네비게이션 화살표 스타일 적용
+        from .styles import DARK_THEME
+        self.setStyleSheet(DARK_THEME)
+
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 10, 10, 10)
 
         header_layout = QHBoxLayout()
         header_layout.setSpacing(10)
 
-        self.prev_button = QPushButton("◀")
-        self.prev_button.setFixedSize(40, 30)
+        self.prev_button = QPushButton("◂")
+        self.prev_button.setObjectName("navigationArrow")
+        self.prev_button.setFixedSize(48, 40)
         self.prev_button.setToolTip("이전 달")
         header_layout.addWidget(self.prev_button)
 
@@ -284,8 +304,9 @@ class CalendarView(QWidget):
         self.month_label.setStyleSheet("font-size: 18px; font-weight: bold;")
         header_layout.addWidget(self.month_label)
 
-        self.next_button = QPushButton("▶")
-        self.next_button.setFixedSize(40, 30)
+        self.next_button = QPushButton("▸")
+        self.next_button.setObjectName("navigationArrow")
+        self.next_button.setFixedSize(48, 40)
         self.next_button.setToolTip("다음 달")
         header_layout.addWidget(self.next_button)
 

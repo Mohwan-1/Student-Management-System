@@ -63,8 +63,8 @@ class StudentForm(QWidget):
         form_layout.addWidget(self.start_date_label)
 
         self.mini_calendar = MiniCalendar()
-        self.mini_calendar.setFixedHeight(220)  # 고정 높이로 변경
-        self.mini_calendar.setMinimumWidth(280)  # 최소 너비 설정
+        self.mini_calendar.setFixedHeight(180)
+        self.mini_calendar.setMinimumWidth(350)
         form_layout.addWidget(self.mini_calendar)
 
         button_layout = QHBoxLayout()
@@ -99,47 +99,31 @@ class StudentForm(QWidget):
         layout.addWidget(separator)
 
         students_group = QGroupBox("등록된 수강생")
+        students_group.setMaximumHeight(250)
         students_layout = QVBoxLayout(students_group)
+
+        # 스크롤 영역 생성
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        # 스크롤 가능한 위젯 생성
+        scroll_widget = QWidget()
+        self.students_layout = QVBoxLayout(scroll_widget)
+        self.students_layout.setContentsMargins(5, 5, 5, 5)
+        self.students_layout.setSpacing(5)
 
         self.students_label = QLabel("등록된 수강생이 없습니다.")
         self.students_label.setWordWrap(True)
         self.students_label.setStyleSheet("color: #CCCCCC; padding: 10px;")
-        students_layout.addWidget(self.students_label)
+        self.students_layout.addWidget(self.students_label)
+        self.students_layout.addStretch()
 
-        # 수강생 목록을 스크롤 가능하게 설정
-        scroll_area = QScrollArea()
-        scroll_area.setWidget(students_group)
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setMinimumHeight(200)  # 최소 높이 설정
-        scroll_area.setMaximumHeight(300)  # 최대 높이 제한으로 미니 달력 공간 확보
+        scroll_area.setWidget(scroll_widget)
+        students_layout.addWidget(scroll_area)
 
-        # 스크롤 영역 스타일 설정
-        scroll_area.setStyleSheet("""
-            QScrollArea {
-                background-color: transparent;
-                border: none;
-            }
-            QScrollBar:vertical {
-                background-color: #2D2D2D;
-                width: 12px;
-                border-radius: 6px;
-                margin: 0px;
-            }
-            QScrollBar::handle:vertical {
-                background-color: #606060;
-                border-radius: 6px;
-                min-height: 20px;
-                margin: 2px;
-            }
-            QScrollBar::handle:vertical:hover {
-                background-color: #707070;
-            }
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-                height: 0px;
-            }
-        """)
-
-        layout.addWidget(scroll_area)
+        layout.addWidget(students_group)
 
     def setup_connections(self):
         self.register_button.clicked.connect(self.register_student)

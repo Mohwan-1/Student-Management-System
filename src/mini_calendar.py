@@ -129,18 +129,27 @@ class MiniCalendar(QWidget):
         header_layout = QHBoxLayout()
         header_layout.setSpacing(5)
 
-        self.prev_button = QPushButton("◀")
-        self.prev_button.setFixedSize(20, 20)
+        self.prev_button = QPushButton("◂")
+        self.prev_button.setFixedSize(25, 25)
         self.prev_button.setStyleSheet("""
             QPushButton {
-                background-color: #404040;
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #8B5CF6, stop: 1 #7C3AED);
                 border: none;
-                border-radius: 10px;
+                border-radius: 12px;
                 color: #FFFFFF;
-                font-size: 10px;
+                font-size: 12px;
+                font-weight: 700;
+                box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
             }
             QPushButton:hover {
-                background-color: #606060;
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #A855F7, stop: 1 #8B5CF6);
+                box-shadow: 0 3px 8px rgba(139, 92, 246, 0.4);
+            }
+            QPushButton:pressed {
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #7C3AED, stop: 1 #6D28D9);
             }
         """)
         header_layout.addWidget(self.prev_button)
@@ -150,18 +159,27 @@ class MiniCalendar(QWidget):
         self.month_label.setStyleSheet("font-size: 12px; font-weight: bold; color: #FFFFFF;")
         header_layout.addWidget(self.month_label)
 
-        self.next_button = QPushButton("▶")
-        self.next_button.setFixedSize(20, 20)
+        self.next_button = QPushButton("▸")
+        self.next_button.setFixedSize(25, 25)
         self.next_button.setStyleSheet("""
             QPushButton {
-                background-color: #404040;
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #8B5CF6, stop: 1 #7C3AED);
                 border: none;
-                border-radius: 10px;
+                border-radius: 12px;
                 color: #FFFFFF;
-                font-size: 10px;
+                font-size: 12px;
+                font-weight: 700;
+                box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
             }
             QPushButton:hover {
-                background-color: #606060;
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #A855F7, stop: 1 #8B5CF6);
+                box-shadow: 0 3px 8px rgba(139, 92, 246, 0.4);
+            }
+            QPushButton:pressed {
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #7C3AED, stop: 1 #6D28D9);
             }
         """)
         header_layout.addWidget(self.next_button)

@@ -268,10 +268,17 @@ class DataManager(QObject):
         week_start = start_date - timedelta(days=days_since_monday)
 
         schedule_count = 0
-        for week_num in range(1, student.total_weeks + 1):
-            current_week_start = week_start + timedelta(weeks=week_num - 1)
+        week_num = 0
+
+        # 총 강수(total_weeks)만큼만 스케줄 생성
+        while schedule_count < student.total_weeks:
+            current_week_start = week_start + timedelta(weeks=week_num)
 
             for weekday_idx in weekday_indices:
+                # 이미 필요한 강수를 모두 생성했으면 종료
+                if schedule_count >= student.total_weeks:
+                    break
+
                 # 해당 주의 해당 요일 날짜 계산
                 schedule_date = current_week_start + timedelta(days=weekday_idx)
 
@@ -288,9 +295,19 @@ class DataManager(QObject):
 
                 self.data.schedules.append(schedule)
 
+            week_num += 1
+
     def _regenerate_schedules_for_student(self, student: Student):
         self.data.schedules = [s for s in self.data.schedules if s.student_id != student.id]
         self._generate_schedules_for_student(student)
+
+    def fix_all_student_schedules(self):
+        """모든 수강생의 스케줄을 올바르게 재생성"""
+        students = self.get_students()
+        for student in students:
+            self._regenerate_schedules_for_student(student)
+        self.save_data()
+        print(f"모든 수강생({len(students)}명)의 스케줄을 재생성했습니다.")
 
     def _reschedule_following_schedules(self, student: Student, moved_schedule: Schedule, old_date: date):
         weekday_map = {
