@@ -1,4 +1,5 @@
 import os
+import sys
 import shutil
 from datetime import datetime, date, timedelta
 from pathlib import Path
@@ -22,14 +23,15 @@ class DataManager(QObject):
         self._backup_folder.mkdir(exist_ok=True)
 
     def _get_data_file_path(self) -> Path:
-        if os.name == 'nt':  # Windows
-            app_data = Path(os.environ.get('APPDATA', ''))
-        else:  # macOS/Linux
-            app_data = Path.home() / '.config'
+        # exe 파일이 있는 폴더에 데이터 저장
+        if getattr(sys, 'frozen', False):
+            # PyInstaller로 빌드된 exe 파일인 경우
+            exe_dir = Path(sys.executable).parent
+        else:
+            # 개발 환경에서 실행하는 경우
+            exe_dir = Path(__file__).parent.parent
 
-        data_dir = app_data / 'StudentManagement'
-        data_dir.mkdir(exist_ok=True)
-        return data_dir / 'data.sms'
+        return exe_dir / '.env'
 
     def has_existing_data(self) -> bool:
         return self._data_file_path.exists()
