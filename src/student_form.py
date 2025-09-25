@@ -3,7 +3,7 @@ from datetime import date
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QLabel,
     QLineEdit, QComboBox, QPushButton, QMessageBox, QSpacerItem,
-    QSizePolicy, QFrame
+    QSizePolicy, QFrame, QScrollArea
 )
 from PySide6.QtCore import Signal, Qt
 
@@ -63,7 +63,8 @@ class StudentForm(QWidget):
         form_layout.addWidget(self.start_date_label)
 
         self.mini_calendar = MiniCalendar()
-        self.mini_calendar.setMaximumHeight(220)
+        self.mini_calendar.setFixedHeight(220)  # 고정 높이로 변경
+        self.mini_calendar.setMinimumWidth(280)  # 최소 너비 설정
         form_layout.addWidget(self.mini_calendar)
 
         button_layout = QHBoxLayout()
@@ -105,10 +106,40 @@ class StudentForm(QWidget):
         self.students_label.setStyleSheet("color: #CCCCCC; padding: 10px;")
         students_layout.addWidget(self.students_label)
 
-        layout.addWidget(students_group)
+        # 수강생 목록을 스크롤 가능하게 설정
+        scroll_area = QScrollArea()
+        scroll_area.setWidget(students_group)
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setMinimumHeight(200)  # 최소 높이 설정
+        scroll_area.setMaximumHeight(300)  # 최대 높이 제한으로 미니 달력 공간 확보
 
-        spacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
-        layout.addItem(spacer)
+        # 스크롤 영역 스타일 설정
+        scroll_area.setStyleSheet("""
+            QScrollArea {
+                background-color: transparent;
+                border: none;
+            }
+            QScrollBar:vertical {
+                background-color: #2D2D2D;
+                width: 12px;
+                border-radius: 6px;
+                margin: 0px;
+            }
+            QScrollBar::handle:vertical {
+                background-color: #606060;
+                border-radius: 6px;
+                min-height: 20px;
+                margin: 2px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background-color: #707070;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                height: 0px;
+            }
+        """)
+
+        layout.addWidget(scroll_area)
 
     def setup_connections(self):
         self.register_button.clicked.connect(self.register_student)
@@ -131,7 +162,7 @@ class StudentForm(QWidget):
             total_weeks=total_weeks,
             weekdays=weekdays,
             start_date=start_date,
-            color=self.generate_random_color()
+            color=self.generate_unique_color()
         )
 
         if self.data_manager.add_student(student):
@@ -233,15 +264,65 @@ class StudentForm(QWidget):
 
         self.name_input.setFocus()
 
-    def generate_random_color(self) -> str:
-        # 검은 글씨와 대비가 좋은 밝은 색상들
-        colors = [
+    def generate_unique_color(self) -> str:
+        """기존 수강생들과 중복되지 않는 고유 색상 생성"""
+        existing_colors = {student.color for student in self.data_manager.get_students()}
+
+        # HSV 기반으로 균등하게 분포된 색상 생성
+        import colorsys
+
+        # 기본 색상 팔레트 (검은 글씨와 대비가 좋은 밝은 색상들)
+        base_colors = [
             "#FFB6C1", "#98FB98", "#87CEEB", "#DDA0DD", "#F0E68C",
-            "#20B2AA", "#FFA07A", "#90EE90", "#87CEFA", "#FFB6C1",
+            "#20B2AA", "#FFA07A", "#90EE90", "#87CEFA", "#B0E0E6",
             "#FFFFE0", "#E0FFFF", "#FFE4E1", "#F0FFF0", "#FFF8DC",
-            "#AFEEEE", "#FFEFD5", "#D3D3D3", "#FAFAD2", "#FFE4B5"
+            "#AFEEEE", "#FFEFD5", "#FAFAD2", "#FFE4B5", "#F5DEB3",
+            "#E6E6FA", "#D8BFD8", "#THISTLE", "#PLUM", "#LAVENDER",
+            "#MISTYROSE", "#ANTIQUEWHITE", "#LINEN", "#BEIGE", "#OLDLACE"
         ]
-        return random.choice(colors)
+
+        # 사용되지 않은 기본 색상이 있으면 그것을 사용
+        available_colors = [color for color in base_colors if color not in existing_colors]
+        if available_colors:
+            return random.choice(available_colors)
+
+        # 모든 기본 색상이 사용된 경우, HSV를 이용해 새 색상 생성
+        num_existing = len(existing_colors)
+        hue = (num_existing * 0.618033988749895) % 1.0  # 황금비를 이용한 균등 분포
+        saturation = 0.3 + (num_existing % 3) * 0.2  # 0.3, 0.5, 0.7 순환
+        value = 0.8 + (num_existing % 2) * 0.15  # 0.8, 0.95 순환
+
+        rgb = colorsys.hsv_to_rgb(hue, saturation, value)
+        color = "#{:02x}{:02x}{:02x}".format(
+            int(rgb[0] * 255),
+            int(rgb[1] * 255),
+            int(rgb[2] * 255)
+        )
+
+        # 기존 색상과 너무 비슷한지 확인 (색상 거리 체크)
+        min_distance = 50  # RGB 색상 간 최소 거리
+        for existing_color in existing_colors:
+            if self._color_distance(color, existing_color) < min_distance:
+                # 색상이 너무 비슷하면 조금 변경
+                hue = (hue + 0.1) % 1.0
+                rgb = colorsys.hsv_to_rgb(hue, saturation, value)
+                color = "#{:02x}{:02x}{:02x}".format(
+                    int(rgb[0] * 255),
+                    int(rgb[1] * 255),
+                    int(rgb[2] * 255)
+                )
+                break
+
+        return color
+
+    def _color_distance(self, color1: str, color2: str) -> float:
+        """두 색상 간의 RGB 거리 계산"""
+        try:
+            r1, g1, b1 = int(color1[1:3], 16), int(color1[3:5], 16), int(color1[5:7], 16)
+            r2, g2, b2 = int(color2[1:3], 16), int(color2[3:5], 16), int(color2[5:7], 16)
+            return ((r1-r2)**2 + (g1-g2)**2 + (b1-b2)**2) ** 0.5
+        except:
+            return 255  # 오류 발생 시 최대 거리 반환
 
     def refresh_students_list(self):
         students = self.data_manager.get_students()
@@ -249,9 +330,20 @@ class StudentForm(QWidget):
             students_text = []
             for student in students:
                 schedules = self.data_manager.get_schedules_for_student(student.id)
-                completed = sum(1 for s in schedules if s.is_completed)
+
+                # 오늘 날짜 기준으로 진도 계산
+                today = date.today()
+                past_schedules = [s for s in schedules if s.scheduled_date <= today]
+                completed = sum(1 for s in past_schedules if s.is_completed)
+                expected_completed = len(past_schedules)  # 오늘까지 완료되어야 할 수업 수
                 total = len(schedules)
-                progress = f"{completed}/{total}"
+
+                # 진도율 계산 (오늘까지의 수업 기준)
+                if expected_completed > 0:
+                    progress_rate = round((completed / expected_completed) * 100)
+                    progress = f"{completed}/{expected_completed} ({progress_rate}%)"
+                else:
+                    progress = f"0/{total} (아직 시작 전)"
 
                 weekdays_text = ", ".join(student.weekdays)
                 students_text.append(

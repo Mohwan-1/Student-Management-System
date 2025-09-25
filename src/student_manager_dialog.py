@@ -151,11 +151,23 @@ class StudentManagerDialog(QDialog):
             start_date_item = QTableWidgetItem(student.start_date.strftime("%Y-%m-%d"))
             self.table.setItem(row, 4, start_date_item)
 
-            # 진도
+            # 진도 (오늘 날짜 기준)
             schedules = self.data_manager.get_schedules_for_student(student.id)
-            completed = sum(1 for s in schedules if s.is_completed)
+
+            from datetime import date
+            today = date.today()
+            past_schedules = [s for s in schedules if s.scheduled_date <= today]
+            completed = sum(1 for s in past_schedules if s.is_completed)
+            expected_completed = len(past_schedules)
             total = len(schedules)
-            progress_item = QTableWidgetItem(f"{completed}/{total}")
+
+            if expected_completed > 0:
+                progress_rate = round((completed / expected_completed) * 100)
+                progress_text = f"{completed}/{expected_completed} ({progress_rate}%)"
+            else:
+                progress_text = f"0/{total} (시작 전)"
+
+            progress_item = QTableWidgetItem(progress_text)
             self.table.setItem(row, 5, progress_item)
 
             # 상태

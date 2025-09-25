@@ -16,23 +16,54 @@
 ### 1. Python 설치
 Python 3.8 이상이 필요합니다. [Python 공식 사이트](https://python.org)에서 다운로드하세요.
 
-### 2. 의존성 설치
+### 2. 자동 설치 (권장)
 프로젝트 폴더에서 다음 명령어를 실행하세요:
 
 ```bash
 python setup.py
 ```
 
-또는 수동으로 설치:
-
-```bash
-pip install -r requirements.txt
-```
+이 스크립트는 다음을 자동으로 수행합니다:
+- 가상환경(.venv) 생성
+- pip 업그레이드
+- 필요한 패키지 설치
 
 ### 3. 프로그램 실행
 
+#### 방법 1: 배치/스크립트 파일 사용 (가장 쉬움)
+**Windows:**
 ```bash
+run.bat
+```
+
+**Linux/macOS:**
+```bash
+chmod +x run.sh
+./run.sh
+```
+
+#### 방법 2: 가상환경 직접 사용
+**Windows:**
+```bash
+.venv\Scripts\activate
 python main.py
+```
+
+**Linux/macOS:**
+```bash
+source .venv/bin/activate
+python main.py
+```
+
+#### 방법 3: 가상환경 Python 직접 실행
+**Windows:**
+```bash
+.venv\Scripts\python.exe main.py
+```
+
+**Linux/macOS:**
+```bash
+.venv/bin/python main.py
 ```
 
 ## 사용 방법

@@ -42,16 +42,55 @@ class ScheduleItem(QFrame):
             text += " ✓"
 
         label = QLabel(text)
-        label.setStyleSheet("""
-            color: #000000;
-            font-weight: bold;
-            font-size: 13px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 2px;
-            padding: 1px 3px;
-        """)
+
+        # 완료된 일정은 다른 스타일 적용
+        if schedule.is_completed:
+            label.setStyleSheet("""
+                color: #FFFFFF;
+                font-weight: bold;
+                font-size: 13px;
+                background: rgba(16, 124, 16, 0.8);
+                border-radius: 2px;
+                padding: 1px 3px;
+            """)
+            # 완료된 일정의 부모 프레임도 스타일 변경
+            self.setStyleSheet(f"""
+                QFrame {{
+                    background-color: {self._darken_color(student.color)};
+                    border: 1px solid #107C10;
+                    border-radius: 4px;
+                    padding: 2px;
+                    margin: 1px;
+                    opacity: 0.7;
+                }}
+                QFrame:hover {{
+                    border: 2px solid #107C10;
+                    background-color: {student.color};
+                    opacity: 1.0;
+                }}
+            """)
+        else:
+            label.setStyleSheet("""
+                color: #000000;
+                font-weight: bold;
+                font-size: 13px;
+                background: rgba(255, 255, 255, 0.9);
+                border-radius: 2px;
+                padding: 1px 3px;
+            """)
         label.setWordWrap(True)
         layout.addWidget(label)
+
+    def mouseDoubleClickEvent(self, event):
+        """더블클릭으로 완료 상태 토글"""
+        if event.button() == Qt.LeftButton:
+            # 부모 달력 뷰에 완료 토글 요청
+            parent_widget = self.parent()
+            while parent_widget and not hasattr(parent_widget, 'toggle_schedule_completion'):
+                parent_widget = parent_widget.parent()
+
+            if parent_widget:
+                parent_widget.toggle_schedule_completion(self.schedule.id)
 
     def _lighten_color(self, color: str) -> str:
         """색상을 밝게 만들어 호버 효과에 사용"""
@@ -65,6 +104,23 @@ class ScheduleItem(QFrame):
             r = min(255, int(r * 1.2))
             g = min(255, int(g * 1.2))
             b = min(255, int(b * 1.2))
+
+            return f"#{r:02x}{g:02x}{b:02x}"
+        except:
+            return color
+
+    def _darken_color(self, color: str) -> str:
+        """색상을 어둡게 만들어 완료된 일정에 사용"""
+        try:
+            # #RRGGBB 형식의 색상을 파싱
+            r = int(color[1:3], 16)
+            g = int(color[3:5], 16)
+            b = int(color[5:7], 16)
+
+            # 각 채널을 30% 어둡게 만들기
+            r = int(r * 0.7)
+            g = int(g * 0.7)
+            b = int(b * 0.7)
 
             return f"#{r:02x}{g:02x}{b:02x}"
         except:
@@ -369,6 +425,21 @@ class CalendarView(QWidget):
         today = date.today()
         self.current_date = today.replace(day=1)
         self.update_calendar()
+
+    def toggle_schedule_completion(self, schedule_id: str):
+        """일정의 완료 상태를 토글"""
+        schedule = None
+        for s in self.data_manager.get_schedules():
+            if s.id == schedule_id:
+                schedule = s
+                break
+
+        if schedule:
+            new_status = not schedule.is_completed
+            if self.data_manager.mark_schedule_completed(schedule_id, new_status):
+                status_text = "완료" if new_status else "미완료"
+                self.scheduleChanged.emit(f"'{schedule.week_number}주차' 일정이 {status_text}로 변경되었습니다.")
+                self.load_schedules()
 
     def refresh(self):
         self.load_schedules()
