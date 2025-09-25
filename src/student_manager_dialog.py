@@ -151,21 +151,26 @@ class StudentManagerDialog(QDialog):
             start_date_item = QTableWidgetItem(student.start_date.strftime("%Y-%m-%d"))
             self.table.setItem(row, 4, start_date_item)
 
-            # 진도 (오늘 날짜 기준)
-            schedules = self.data_manager.get_schedules_for_student(student.id)
-
+            # 진도 (오늘 날짜 기준 주차 / 총 주차)
             from datetime import date
             today = date.today()
-            past_schedules = [s for s in schedules if s.scheduled_date <= today]
-            completed = sum(1 for s in past_schedules if s.is_completed)
-            expected_completed = len(past_schedules)
-            total = len(schedules)
 
-            if expected_completed > 0:
-                progress_rate = round((completed / expected_completed) * 100)
-                progress_text = f"{completed}/{expected_completed} ({progress_rate}%)"
+            if student.start_date <= today:
+                # 시작일부터 오늘까지의 경과 일수
+                days_passed = (today - student.start_date).days
+
+                # 경과 주차 계산 (1주차부터 시작하므로 +1)
+                current_week = min(days_passed // 7 + 1, student.total_weeks)
+
+                # 진도율 계산
+                if student.total_weeks > 0:
+                    progress_percentage = round((current_week / student.total_weeks) * 100)
+                    progress_text = f"{current_week}/{student.total_weeks} ({progress_percentage}%)"
+                else:
+                    progress_text = "0/0 (0%)"
             else:
-                progress_text = f"0/{total} (시작 전)"
+                # 아직 시작하지 않은 경우
+                progress_text = f"0/{student.total_weeks} (시작 예정)"
 
             progress_item = QTableWidgetItem(progress_text)
             self.table.setItem(row, 5, progress_item)

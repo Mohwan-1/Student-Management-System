@@ -48,6 +48,7 @@ class Schedule:
     week_number: int = 1
     scheduled_date: date = field(default_factory=date.today)
     is_completed: bool = False
+    memo: str = ""
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
 
@@ -58,6 +59,7 @@ class Schedule:
             "week_number": self.week_number,
             "scheduled_date": self.scheduled_date.isoformat(),
             "is_completed": self.is_completed,
+            "memo": self.memo,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat()
         }
@@ -70,6 +72,7 @@ class Schedule:
         schedule.week_number = data.get("week_number", 1)
         schedule.scheduled_date = date.fromisoformat(data.get("scheduled_date", date.today().isoformat()))
         schedule.is_completed = data.get("is_completed", False)
+        schedule.memo = data.get("memo", "")
         schedule.created_at = datetime.fromisoformat(data.get("created_at", datetime.now().isoformat()))
         schedule.updated_at = datetime.fromisoformat(data.get("updated_at", datetime.now().isoformat()))
         return schedule

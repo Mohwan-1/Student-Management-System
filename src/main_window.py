@@ -88,6 +88,12 @@ class MainWindow(QMainWindow):
         manage_students_action.triggered.connect(self.show_student_manager)
         student_menu.addAction(manage_students_action)
 
+        student_menu.addSeparator()
+
+        update_colors_action = QAction("수강생 색상 업데이트", self)
+        update_colors_action.triggered.connect(self.update_student_colors)
+        student_menu.addAction(update_colors_action)
+
         edit_menu = menubar.addMenu("편집(&E)")
 
         undo_action = QAction("실행 취소", self)
@@ -175,6 +181,53 @@ class MainWindow(QMainWindow):
 
     def on_student_deleted(self, student_name):
         self.status_bar.showMessage(f"수강생 '{student_name}'이(가) 삭제되었습니다.", 3000)
+
+    def update_student_colors(self):
+        """기존 수강생들의 색상을 강렬한 색상으로 업데이트"""
+        students = self.data_manager.get_students()
+        if not students:
+            QMessageBox.information(self, "색상 업데이트", "업데이트할 수강생이 없습니다.")
+            return
+
+        reply = QMessageBox.question(
+            self, "색상 업데이트 확인",
+            f"현재 등록된 {len(students)}명 수강생의 색상을 강렬한 고대비 색상으로 업데이트하시겠습니까?\n\n"
+            "기존 색상은 모두 새로운 색상으로 변경됩니다.",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+
+        if reply == QMessageBox.Yes:
+            try:
+                # 강렬한 기본 색상 팔레트
+                vibrant_colors = [
+                    "#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF",
+                    "#FF6600", "#FF0066", "#66FF00", "#0066FF", "#6600FF", "#FF3300",
+                    "#FF3333", "#33FF33", "#3333FF", "#FFFF33", "#FF33FF", "#33FFFF",
+                    "#CC0000", "#00CC00", "#0000CC", "#CCCC00", "#CC00CC", "#00CCCC",
+                    "#EE4B2B", "#228B22", "#4169E1", "#FF1493", "#FF8C00", "#8A2BE2",
+                ]
+
+                updated_count = 0
+                for i, student in enumerate(students):
+                    if i < len(vibrant_colors):
+                        old_color = student.color
+                        student.color = vibrant_colors[i]
+                        updated_count += 1
+                        print(f"수강생 '{student.name}' 색상 업데이트: {old_color} -> {student.color}")
+
+                if self.data_manager.save_data():
+                    self.refresh_views()
+                    QMessageBox.information(
+                        self, "색상 업데이트 완료",
+                        f"{updated_count}명 수강생의 색상이 강렬한 색상으로 업데이트되었습니다."
+                    )
+                    self.status_bar.showMessage(f"{updated_count}명 수강생 색상 업데이트 완료", 3000)
+                else:
+                    QMessageBox.warning(self, "오류", "색상 업데이트 저장에 실패했습니다.")
+
+            except Exception as e:
+                QMessageBox.critical(self, "오류", f"색상 업데이트 중 오류가 발생했습니다: {str(e)}")
 
     def undo_last_action(self):
         pass

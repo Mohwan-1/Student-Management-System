@@ -265,55 +265,97 @@ class StudentForm(QWidget):
         self.name_input.setFocus()
 
     def generate_unique_color(self) -> str:
-        """기존 수강생들과 중복되지 않는 고유 색상 생성"""
+        """기존 수강생들과 중복되지 않는 고유 색상 생성 (강렬한 고대비 색상)"""
         existing_colors = {student.color for student in self.data_manager.get_students()}
 
-        # HSV 기반으로 균등하게 분포된 색상 생성
         import colorsys
 
-        # 기본 색상 팔레트 (검은 글씨와 대비가 좋은 밝은 색상들)
+        # 강렬하고 대비가 강한 기본 색상 팔레트
         base_colors = [
-            "#FFB6C1", "#98FB98", "#87CEEB", "#DDA0DD", "#F0E68C",
-            "#20B2AA", "#FFA07A", "#90EE90", "#87CEFA", "#B0E0E6",
-            "#FFFFE0", "#E0FFFF", "#FFE4E1", "#F0FFF0", "#FFF8DC",
-            "#AFEEEE", "#FFEFD5", "#FAFAD2", "#FFE4B5", "#F5DEB3",
-            "#E6E6FA", "#D8BFD8", "#THISTLE", "#PLUM", "#LAVENDER",
-            "#MISTYROSE", "#ANTIQUEWHITE", "#LINEN", "#BEIGE", "#OLDLACE"
+            "#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF",  # 순색 6개
+            "#FF6600", "#FF0066", "#66FF00", "#0066FF", "#6600FF", "#FF6600",  # 강렬한 조합
+            "#FF3333", "#33FF33", "#3333FF", "#FFFF33", "#FF33FF", "#33FFFF",  # 밝은 톤
+            "#CC0000", "#00CC00", "#0000CC", "#CCCC00", "#CC00CC", "#00CCCC",  # 중간 톤
+            "#990000", "#009900", "#000099", "#999900", "#990099", "#009999",  # 어두운 톤
+            "#FF9900", "#FF0099", "#99FF00", "#0099FF", "#9900FF", "#FF9900",  # 추가 강렬한 색
+            "#EE4B2B", "#228B22", "#4169E1", "#FF1493", "#FF8C00", "#8A2BE2",  # 고유한 강렬한 색
+            "#DC143C", "#32CD32", "#1E90FF", "#FF69B4", "#FFA500", "#9370DB",  # 더 많은 옵션
         ]
 
         # 사용되지 않은 기본 색상이 있으면 그것을 사용
         available_colors = [color for color in base_colors if color not in existing_colors]
         if available_colors:
-            return random.choice(available_colors)
+            # 가장 대비가 강한 색상 우선 선택
+            return available_colors[0]
 
-        # 모든 기본 색상이 사용된 경우, HSV를 이용해 새 색상 생성
+        # 모든 기본 색상이 사용된 경우, HSV를 이용해 강렬한 새 색상 생성
         num_existing = len(existing_colors)
-        hue = (num_existing * 0.618033988749895) % 1.0  # 황금비를 이용한 균등 분포
-        saturation = 0.3 + (num_existing % 3) * 0.2  # 0.3, 0.5, 0.7 순환
-        value = 0.8 + (num_existing % 2) * 0.15  # 0.8, 0.95 순환
 
-        rgb = colorsys.hsv_to_rgb(hue, saturation, value)
-        color = "#{:02x}{:02x}{:02x}".format(
-            int(rgb[0] * 255),
-            int(rgb[1] * 255),
-            int(rgb[2] * 255)
-        )
+        # 더 많은 시도를 통해 고유한 색상 찾기
+        max_attempts = 50
+        for attempt in range(max_attempts):
+            # 황금비와 시도 횟수를 조합하여 다양성 증가
+            hue = ((num_existing + attempt) * 0.618033988749895 + attempt * 0.1) % 1.0
 
-        # 기존 색상과 너무 비슷한지 확인 (색상 거리 체크)
-        min_distance = 50  # RGB 색상 간 최소 거리
-        for existing_color in existing_colors:
-            if self._color_distance(color, existing_color) < min_distance:
-                # 색상이 너무 비슷하면 조금 변경
-                hue = (hue + 0.1) % 1.0
-                rgb = colorsys.hsv_to_rgb(hue, saturation, value)
-                color = "#{:02x}{:02x}{:02x}".format(
-                    int(rgb[0] * 255),
-                    int(rgb[1] * 255),
-                    int(rgb[2] * 255)
-                )
-                break
+            # 높은 채도와 밝기로 강렬한 색상 생성
+            saturation = 0.9 + (attempt % 2) * 0.1  # 0.9 또는 1.0 (매우 높은 채도)
+            value = 0.8 + (attempt % 3) * 0.1      # 0.8, 0.9, 1.0 순환 (높은 밝기)
 
-        return color
+            rgb = colorsys.hsv_to_rgb(hue, saturation, value)
+            color = "#{:02x}{:02x}{:02x}".format(
+                int(rgb[0] * 255),
+                int(rgb[1] * 255),
+                int(rgb[2] * 255)
+            )
+
+            # 기존 색상과의 거리 체크 (더 엄격한 기준)
+            min_distance = 80  # RGB 색상 간 최소 거리를 더 크게
+            is_unique = True
+
+            for existing_color in existing_colors:
+                if self._color_distance(color, existing_color) < min_distance:
+                    is_unique = False
+                    break
+
+            if is_unique:
+                return color
+
+        # 최후의 방법: 랜덤하게 강렬한 색상 생성
+        import random
+        for _ in range(10):
+            r = random.choice([255, 0, 128, 64, 192])
+            g = random.choice([255, 0, 128, 64, 192])
+            b = random.choice([255, 0, 128, 64, 192])
+
+            # 너무 어둡거나 회색톤 방지
+            if (r + g + b) < 200 or abs(r-g) < 50 and abs(g-b) < 50 and abs(r-b) < 50:
+                continue
+
+            color = f"#{r:02x}{g:02x}{b:02x}"
+
+            # 고유성 체크
+            is_unique = True
+            for existing_color in existing_colors:
+                if self._color_distance(color, existing_color) < 60:
+                    is_unique = False
+                    break
+
+            if is_unique:
+                return color
+
+        # 마지막 수단: 시간 기반 고유 색상
+        import time
+        seed = int(time.time() * 1000) % 1000
+        r = (seed * 7) % 256
+        g = (seed * 13) % 256
+        b = (seed * 19) % 256
+
+        # 색상 강도 보장
+        if r < 128: r = 255 - r
+        if g < 128: g = 255 - g
+        if b < 128: b = 255 - b
+
+        return f"#{r:02x}{g:02x}{b:02x}"
 
     def _color_distance(self, color1: str, color2: str) -> float:
         """두 색상 간의 RGB 거리 계산"""

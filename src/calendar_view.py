@@ -2,13 +2,14 @@ from datetime import date, datetime, timedelta
 from typing import List, Dict, Optional
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QGridLayout, QFrame, QScrollArea, QMessageBox
+    QGridLayout, QFrame, QScrollArea, QMessageBox, QDialog
 )
 from PySide6.QtCore import Signal, Qt, QMimeData, QPoint
 from PySide6.QtGui import QDragEnterEvent, QDropEvent, QMouseEvent, QDrag, QPainter, QColor, QFont
 
 from .data_manager import DataManager
 from .models import Schedule, Student
+from .memo_dialog import MemoDialog
 
 
 class ScheduleItem(QFrame):
@@ -40,6 +41,9 @@ class ScheduleItem(QFrame):
         text = f"{student.name} {schedule.week_number}주차"
         if schedule.is_completed:
             text += " ✓"
+        # 메모가 존재하고 비어있지 않으면 아이콘 표시
+        if schedule.memo and schedule.memo.strip():
+            text += " 📝"
 
         label = QLabel(text)
 
@@ -82,15 +86,15 @@ class ScheduleItem(QFrame):
         layout.addWidget(label)
 
     def mouseDoubleClickEvent(self, event):
-        """더블클릭으로 완료 상태 토글"""
+        """더블클릭으로 메모장 열기"""
         if event.button() == Qt.LeftButton:
-            # 부모 달력 뷰에 완료 토글 요청
+            # 부모 달력 뷰에 메모 다이얼로그 요청
             parent_widget = self.parent()
-            while parent_widget and not hasattr(parent_widget, 'toggle_schedule_completion'):
+            while parent_widget and not hasattr(parent_widget, 'show_memo_dialog'):
                 parent_widget = parent_widget.parent()
 
             if parent_widget:
-                parent_widget.toggle_schedule_completion(self.schedule.id)
+                parent_widget.show_memo_dialog(self.schedule.id)
 
     def _lighten_color(self, color: str) -> str:
         """색상을 밝게 만들어 호버 효과에 사용"""
@@ -365,10 +369,14 @@ class CalendarView(QWidget):
         for cell in self.calendar_cells.values():
             cell.clear_schedules()
 
+        # 최신 스케줄 데이터를 강제로 다시 로드
         schedules = self.data_manager.get_schedules()
         students_dict = {s.id: s for s in self.data_manager.get_students()}
 
-        for schedule in schedules:
+        # 스케줄을 날짜순으로 정렬해서 표시
+        sorted_schedules = sorted(schedules, key=lambda s: s.scheduled_date)
+
+        for schedule in sorted_schedules:
             if schedule.scheduled_date in self.calendar_cells:
                 student = students_dict.get(schedule.student_id)
                 if student:
@@ -440,6 +448,47 @@ class CalendarView(QWidget):
                 status_text = "완료" if new_status else "미완료"
                 self.scheduleChanged.emit(f"'{schedule.week_number}주차' 일정이 {status_text}로 변경되었습니다.")
                 self.load_schedules()
+
+    def show_memo_dialog(self, schedule_id: str):
+        """메모 다이얼로그 표시"""
+        # 최신 스케줄 데이터 가져오기
+        schedule = self.data_manager.get_schedule_by_id(schedule_id)
+        if not schedule:
+            QMessageBox.warning(self, "오류", "스케줄을 찾을 수 없습니다.")
+            return
+
+        student = None
+        for s in self.data_manager.get_students():
+            if s.id == schedule.student_id:
+                student = s
+                break
+
+        if not student:
+            QMessageBox.warning(self, "오류", "수강생 정보를 찾을 수 없습니다.")
+            return
+
+        # 현재 메모 내용으로 다이얼로그 생성
+        dialog = MemoDialog(student.name, schedule.week_number, schedule.memo, self)
+        if dialog.exec() == QDialog.Accepted:
+            new_memo = dialog.get_memo()
+            # 메모 업데이트 시도
+            success = self.data_manager.update_schedule_memo(schedule_id, new_memo)
+            if success:
+                # 성공 시 메시지 표시 및 화면 새로고침
+                if new_memo.strip():
+                    self.scheduleChanged.emit(f"'{student.name} {schedule.week_number}주차' 메모가 저장되었습니다.")
+                else:
+                    self.scheduleChanged.emit(f"'{student.name} {schedule.week_number}주차' 메모가 삭제되었습니다.")
+
+                # 스케줄 다시 로드하여 메모 아이콘 업데이트
+                self.load_schedules()
+
+                # 상태 메시지 디버깅
+                updated_schedule = self.data_manager.get_schedule_by_id(schedule_id)
+                if updated_schedule:
+                    print(f"메모 업데이트 확인 - ID: {schedule_id}, 메모: '{updated_schedule.memo}'")
+            else:
+                QMessageBox.warning(self, "오류", "메모 저장에 실패했습니다.")
 
     def refresh(self):
         self.load_schedules()

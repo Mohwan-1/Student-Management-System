@@ -11,8 +11,8 @@ class MiniCalendarCell(QPushButton):
     def __init__(self, cell_date: date):
         super().__init__(str(cell_date.day))
         self.cell_date = cell_date
-        self.setMinimumSize(30, 30)
-        self.setMaximumSize(30, 30)
+        # 정사각형으로 크기 조정
+        self.setFixedSize(35, 35)
 
         self.setStyleSheet("""
             QPushButton {
@@ -20,7 +20,8 @@ class MiniCalendarCell(QPushButton):
                 border: 1px solid #404040;
                 border-radius: 3px;
                 color: #FFFFFF;
-                font-size: 11px;
+                font-size: 14px;
+                font-weight: bold;
             }
             QPushButton:hover {
                 background-color: #404040;
@@ -34,10 +35,10 @@ class MiniCalendarCell(QPushButton):
             self.setStyleSheet("""
                 QPushButton {
                     background-color: #0078D4;
-                    border: 1px solid #0078D4;
+                    border: 2px solid #0078D4;
                     border-radius: 3px;
                     color: #FFFFFF;
-                    font-size: 11px;
+                    font-size: 14px;
                     font-weight: bold;
                 }
                 QPushButton:hover {
@@ -48,26 +49,30 @@ class MiniCalendarCell(QPushButton):
         if cell_date < date.today():
             self.setStyleSheet("""
                 QPushButton {
-                    background-color: #2A2A2A;
-                    border: 1px solid #404040;
+                    background-color: #1A1A1A;
+                    border: 1px solid #333333;
                     border-radius: 3px;
-                    color: #AAAAAA;
-                    font-size: 11px;
+                    color: #555555;
+                    font-size: 14px;
+                    font-weight: bold;
                 }
                 QPushButton:hover {
-                    background-color: #404040;
+                    background-color: #1A1A1A;
+                    cursor: not-allowed;
                 }
             """)
+            # 과거 날짜는 비활성화
+            self.setEnabled(False)
 
     def set_selected(self, selected: bool):
         if selected:
             self.setStyleSheet("""
                 QPushButton {
                     background-color: #107C10;
-                    border: 2px solid #107C10;
+                    border: 3px solid #107C10;
                     border-radius: 3px;
                     color: #FFFFFF;
-                    font-size: 11px;
+                    font-size: 14px;
                     font-weight: bold;
                 }
                 QPushButton:hover {
@@ -79,10 +84,10 @@ class MiniCalendarCell(QPushButton):
                 self.setStyleSheet("""
                     QPushButton {
                         background-color: #0078D4;
-                        border: 1px solid #0078D4;
+                        border: 2px solid #0078D4;
                         border-radius: 3px;
                         color: #FFFFFF;
-                        font-size: 11px;
+                        font-size: 14px;
                         font-weight: bold;
                     }
                     QPushButton:hover {
@@ -96,7 +101,8 @@ class MiniCalendarCell(QPushButton):
                         border: 1px solid #404040;
                         border-radius: 3px;
                         color: #FFFFFF;
-                        font-size: 11px;
+                        font-size: 14px;
+                        font-weight: bold;
                     }
                     QPushButton:hover {
                         background-color: #404040;
@@ -170,8 +176,7 @@ class MiniCalendar(QWidget):
         for day in weekdays:
             label = QLabel(day)
             label.setAlignment(Qt.AlignCenter)
-            label.setMinimumSize(30, 20)
-            label.setMaximumSize(30, 20)
+            label.setFixedSize(35, 25)
             label.setStyleSheet("""
                 QLabel {
                     font-weight: bold;
@@ -237,12 +242,16 @@ class MiniCalendar(QWidget):
                             border: 1px solid #333333;
                             border-radius: 3px;
                             color: #666666;
-                            font-size: 10px;
+                            font-size: 14px;
+                            font-weight: bold;
                         }
                         QPushButton:hover {
                             background-color: #2A2A2A;
                         }
                     """)
+                    # 다른 달 날짜도 과거면 비활성화
+                    if cell_date < date.today():
+                        cell.setEnabled(False)
 
                 cell.clicked.connect(lambda checked, d=cell_date: self.on_date_clicked(d))
 
@@ -251,6 +260,14 @@ class MiniCalendar(QWidget):
 
     def on_date_clicked(self, clicked_date: date):
         if clicked_date.month != self.current_date.month:
+            return
+
+        # 과거 날짜 선택 방지
+        if clicked_date < date.today():
+            return
+
+        # 이미 선택된 날짜를 다시 클릭하면 무시 (중복 선택 방지)
+        if self.selected_date == clicked_date:
             return
 
         # 이전 선택 해제

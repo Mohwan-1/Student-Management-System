@@ -295,3 +295,31 @@ class DataManager(QObject):
         except Exception as e:
             print(f"Failed to mark schedule as completed: {e}")
             return False
+
+    def update_schedule_memo(self, schedule_id: str, memo: str) -> bool:
+        """일정의 메모를 업데이트"""
+        try:
+            for i, schedule in enumerate(self.data.schedules):
+                if schedule.id == schedule_id:
+                    old_memo = self.data.schedules[i].memo
+                    self.data.schedules[i].memo = memo
+                    self.data.schedules[i].updated_at = datetime.now()
+                    print(f"메모 업데이트: {schedule_id} - '{old_memo}' -> '{memo}'")
+
+                    # 데이터 저장
+                    save_success = self.save_data()
+                    print(f"데이터 저장 성공: {save_success}")
+
+                    return True
+            print(f"스케줄을 찾을 수 없음: {schedule_id}")
+            return False
+        except Exception as e:
+            print(f"Failed to update schedule memo: {e}")
+            return False
+
+    def get_schedule_by_id(self, schedule_id: str) -> Optional[Schedule]:
+        """스케줄 ID로 스케줄 조회"""
+        for schedule in self.data.schedules:
+            if schedule.id == schedule_id:
+                return schedule
+        return None
