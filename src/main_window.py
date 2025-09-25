@@ -257,7 +257,7 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage(f"수강생 '{student_name}'이(가) 삭제되었습니다.", 3000)
 
     def update_student_colors(self):
-        """기존 수강생들의 색상을 강렬한 색상으로 업데이트"""
+        """기존 수강생들의 색상을 고급스럽고 세련된 색상으로 업데이트"""
         students = self.data_manager.get_students()
         if not students:
             QMessageBox.information(self, "색상 업데이트", "업데이트할 수강생이 없습니다.")
@@ -265,7 +265,7 @@ class MainWindow(QMainWindow):
 
         reply = QMessageBox.question(
             self, "색상 업데이트 확인",
-            f"현재 등록된 {len(students)}명 수강생의 색상을 강렬한 고대비 색상으로 업데이트하시겠습니까?\n\n"
+            f"현재 등록된 {len(students)}명 수강생의 색상을 고급스럽고 세련된 색상으로 업데이트하시겠습니까?\n\n"
             "기존 색상은 모두 새로운 색상으로 변경됩니다.",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No
@@ -273,13 +273,24 @@ class MainWindow(QMainWindow):
 
         if reply == QMessageBox.Yes:
             try:
-                # 강렬한 기본 색상 팔레트
+                # 고급스럽고 세련된 원색 기반 팔레트
                 vibrant_colors = [
-                    "#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF",
-                    "#FF6600", "#FF0066", "#66FF00", "#0066FF", "#6600FF", "#FF3300",
-                    "#FF3333", "#33FF33", "#3333FF", "#FFFF33", "#FF33FF", "#33FFFF",
-                    "#CC0000", "#00CC00", "#0000CC", "#CCCC00", "#CC00CC", "#00CCCC",
-                    "#EE4B2B", "#228B22", "#4169E1", "#FF1493", "#FF8C00", "#8A2BE2",
+                    "#DC143C",  # Deep Crimson - 고급스러운 빨간색
+                    "#228B22",  # Forest Green - 세련된 녹색
+                    "#4169E1",  # Royal Blue - 품격 있는 파란색
+                    "#DAA520",  # Goldenrod - 고급스러운 노란색
+                    "#9932CC",  # Dark Orchid - 세련된 보라색
+                    "#00CED1",  # Dark Turquoise - 고급스러운 청록색
+                    "#B22222",  # Fire Brick - 깊은 빨간색
+                    "#2E8B57",  # Sea Green - 바다색 녹색
+                    "#4682B4",  # Steel Blue - 금속질감 파란색
+                    "#CD5C5C",  # Indian Red - 따뜻한 빨간색
+                    "#6B8E23",  # Olive Drab - 올리브 그린
+                    "#483D8B",  # Dark Slate Blue - 어두운 슬레이트 블루
+                    "#8B4513",  # Saddle Brown - 새들 브라운
+                    "#2F4F4F",  # Dark Slate Gray - 어두운 슬레이트 회색
+                    "#8B0000",  # Dark Red - 어두운 빨간색
+                    "#191970",  # Midnight Blue - 미드나이트 블루
                 ]
 
                 updated_count = 0
@@ -294,7 +305,7 @@ class MainWindow(QMainWindow):
                     self.refresh_views()
                     QMessageBox.information(
                         self, "색상 업데이트 완료",
-                        f"{updated_count}명 수강생의 색상이 강렬한 색상으로 업데이트되었습니다."
+                        f"{updated_count}명 수강생의 색상이 고급스럽고 세련된 색상으로 업데이트되었습니다."
                     )
                     self.status_bar.showMessage(f"{updated_count}명 수강생 색상 업데이트 완료", 3000)
                 else:

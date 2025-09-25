@@ -249,21 +249,33 @@ class StudentForm(QWidget):
         self.name_input.setFocus()
 
     def generate_unique_color(self) -> str:
-        """기존 수강생들과 중복되지 않는 고유 색상 생성 (강렬한 고대비 색상)"""
+        """기존 수강생들과 중복되지 않는 고유 색상 생성 (고급스럽고 세련된 원색 기반 색상)"""
         existing_colors = {student.color for student in self.data_manager.get_students()}
 
         import colorsys
 
-        # 강렬하고 대비가 강한 기본 색상 팔레트
+        # 고급스럽고 세련된 원색 기반 팔레트 (원색적이지만 프리미엄한 색상)
         base_colors = [
-            "#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF",  # 순색 6개
-            "#FF6600", "#FF0066", "#66FF00", "#0066FF", "#6600FF", "#FF6600",  # 강렬한 조합
-            "#FF3333", "#33FF33", "#3333FF", "#FFFF33", "#FF33FF", "#33FFFF",  # 밝은 톤
-            "#CC0000", "#00CC00", "#0000CC", "#CCCC00", "#CC00CC", "#00CCCC",  # 중간 톤
-            "#990000", "#009900", "#000099", "#999900", "#990099", "#009999",  # 어두운 톤
-            "#FF9900", "#FF0099", "#99FF00", "#0099FF", "#9900FF", "#FF9900",  # 추가 강렬한 색
-            "#EE4B2B", "#228B22", "#4169E1", "#FF1493", "#FF8C00", "#8A2BE2",  # 고유한 강렬한 색
-            "#DC143C", "#32CD32", "#1E90FF", "#FF69B4", "#FFA500", "#9370DB",  # 더 많은 옵션
+            "#DC143C",  # Deep Crimson - 고급스러운 빨간색
+            "#228B22",  # Forest Green - 세련된 녹색
+            "#4169E1",  # Royal Blue - 품격 있는 파란색
+            "#DAA520",  # Goldenrod - 고급스러운 노란색
+            "#9932CC",  # Dark Orchid - 세련된 보라색
+            "#00CED1",  # Dark Turquoise - 고급스러운 청록색
+            "#B22222",  # Fire Brick - 깊은 빨간색
+            "#2E8B57",  # Sea Green - 바다색 녹색
+            "#4682B4",  # Steel Blue - 금속질감 파란색
+            "#CD5C5C",  # Indian Red - 따뜻한 빨간색
+            "#6B8E23",  # Olive Drab - 올리브 그린
+            "#483D8B",  # Dark Slate Blue - 어두운 슬레이트 블루
+            "#8B4513",  # Saddle Brown - 새들 브라운
+            "#2F4F4F",  # Dark Slate Gray - 어두운 슬레이트 회색
+            "#8B0000",  # Dark Red - 어두운 빨간색
+            "#191970",  # Midnight Blue - 미드나이트 블루
+            "#556B2F",  # Dark Olive Green - 어두운 올리브 그린
+            "#8B008B",  # Dark Magenta - 어두운 마젠타
+            "#FF8C00",  # Dark Orange - 어두운 오렌지
+            "#9ACD32",  # Yellow Green - 옐로우 그린
         ]
 
         # 사용되지 않은 기본 색상이 있으면 그것을 사용

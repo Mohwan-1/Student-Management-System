@@ -2,7 +2,7 @@ from .student_form import StudentForm
 
 
 def update_existing_student_colors(data_manager):
-    """기존 수강생들의 색상을 강렬한 고대비 색상으로 업데이트"""
+    """기존 수강생들의 색상을 고급스럽고 세련된 색상으로 업데이트"""
     students = data_manager.get_students()
 
     if not students:
@@ -18,7 +18,7 @@ def update_existing_student_colors(data_manager):
         # 기존 색상 목록에서 해당 학생 제외하고 새 색상 생성
         original_color = student.color
 
-        # 새로운 강렬한 색상 생성
+        # 새로운 고급스럽고 세련된 색상 생성
         new_color = temp_form.generate_unique_color()
 
         # 중복 체크
@@ -32,4 +32,4 @@ def update_existing_student_colors(data_manager):
 
     # 변경사항 저장
     data_manager.save_data()
-    print(f"총 {len(students)}명 수강생의 색상이 강렬한 색상으로 업데이트되었습니다.")
+    print(f"총 {len(students)}명 수강생의 색상이 고급스럽고 세련된 색상으로 업데이트되었습니다.")

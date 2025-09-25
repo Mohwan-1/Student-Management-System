@@ -17,7 +17,8 @@
       "Bash(move main.exe Student_Management_System.exe)",
       "Bash(git commit:*)",
       "Read(//c/Users/sdisd/Desktop/**)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(del nul)"
     ],
     "deny": [],
     "ask": []
