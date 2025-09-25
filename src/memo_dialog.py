@@ -15,7 +15,7 @@ class MemoDialog(QDialog):
         self.memo_text.setPlainText(current_memo)
 
     def setup_ui(self):
-        self.setWindowTitle(f"{self.student_name} - {self.week_number}주차 메모")
+        self.setWindowTitle(f"{self.student_name} - {self.week_number}강 메모")
         self.setMinimumSize(400, 300)
         self.setModal(True)
 
@@ -24,7 +24,7 @@ class MemoDialog(QDialog):
         layout.setSpacing(15)
 
         # 제목
-        title_label = QLabel(f"{self.student_name} - {self.week_number}주차")
+        title_label = QLabel(f"{self.student_name} - {self.week_number}강")
         title_label.setFont(QFont("Segoe UI", 14, QFont.Bold))
         title_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(title_label)

@@ -8,10 +8,12 @@ from PySide6.QtCore import QObject, Signal
 
 from .crypto_utils import CryptoManager
 from .models import Student, Schedule, AppData
+from .google_sheets_api import GoogleSheetsManager
 
 
 class DataManager(QObject):
     dataChanged = Signal()
+    syncStatusChanged = Signal(str)  # 동기화 상태 변경 시그널
 
     def __init__(self):
         super().__init__()
@@ -21,6 +23,10 @@ class DataManager(QObject):
         self._data_file_path = self._get_data_file_path()
         self._backup_folder = self._data_file_path.parent / "backups"
         self._backup_folder.mkdir(exist_ok=True)
+
+        # 구글 시트 매니저 초기화
+        self.sheets_manager = GoogleSheetsManager()
+        self._initialize_google_sheets()
 
     def _get_data_file_path(self) -> Path:
         # exe 파일이 있는 폴더에 데이터 저장
@@ -122,6 +128,57 @@ class DataManager(QObject):
         except Exception:
             pass
 
+    def restore_from_backup(self, backup_file_path: str) -> bool:
+        """백업 파일에서 데이터를 복원"""
+        try:
+            from pathlib import Path
+            backup_path = Path(backup_file_path)
+
+            if not backup_path.exists():
+                print(f"Backup file not found: {backup_file_path}")
+                return False
+
+            # 현재 데이터 백업 (복원 실패 시 롤백용)
+            rollback_file = None
+            if self._data_file_path.exists():
+                rollback_file = self._data_file_path.with_suffix('.rollback')
+                shutil.copy2(str(self._data_file_path), str(rollback_file))
+
+            try:
+                # 백업 파일을 현재 데이터 파일로 복사
+                shutil.copy2(str(backup_path), str(self._data_file_path))
+
+                # 복원된 데이터 로드 시도
+                if self.password:
+                    success = self.load_data(self.password)
+                    if success:
+                        # 롤백 파일 삭제 (복원 성공)
+                        if rollback_file and rollback_file.exists():
+                            rollback_file.unlink()
+
+                        print(f"Successfully restored backup from: {backup_file_path}")
+                        return True
+                    else:
+                        # 로드 실패 - 롤백
+                        if rollback_file and rollback_file.exists():
+                            shutil.move(str(rollback_file), str(self._data_file_path))
+                        print("Failed to load restored data - rolled back")
+                        return False
+                else:
+                    print("No password set for data restoration")
+                    return False
+
+            except Exception as e:
+                # 복원 실패 - 롤백
+                if rollback_file and rollback_file.exists():
+                    shutil.move(str(rollback_file), str(self._data_file_path))
+                print(f"Restore failed, rolled back: {e}")
+                return False
+
+        except Exception as e:
+            print(f"Failed to restore from backup: {e}")
+            return False
+
     def add_student(self, student: Student) -> bool:
         try:
             self.data.students.append(student)
@@ -202,43 +259,34 @@ class DataManager(QObject):
         if not weekday_indices:
             return
 
-        current_date = student.start_date
-        current_weekday_idx = 0
+        # 요일들을 정렬 (월요일=0 ~ 일요일=6 순서)
+        weekday_indices.sort()
 
-        # 첫 번째 수업 날짜 찾기
-        first_weekday = weekday_indices[0]
-        days_to_first = first_weekday - current_date.weekday()
-        if days_to_first < 0:
-            days_to_first += 7
-        elif days_to_first == 0:
-            # 시작일이 첫 번째 수강 요일과 같으면 그 날부터 시작
-            days_to_first = 0
+        # 시작일 기준으로 첫 주의 시작 월요일 찾기
+        start_date = student.start_date
+        days_since_monday = start_date.weekday()  # 월요일=0, 일요일=6
+        week_start = start_date - timedelta(days=days_since_monday)
 
-        current_date = current_date + timedelta(days=days_to_first)
+        schedule_count = 0
+        for week_num in range(1, student.total_weeks + 1):
+            current_week_start = week_start + timedelta(weeks=week_num - 1)
 
-        for week in range(1, student.total_weeks + 1):
-            target_weekday = weekday_indices[current_weekday_idx % len(weekday_indices)]
+            for weekday_idx in weekday_indices:
+                # 해당 주의 해당 요일 날짜 계산
+                schedule_date = current_week_start + timedelta(days=weekday_idx)
 
-            # 현재 날짜에서 타겟 요일까지의 거리 계산
-            if week == 1:
-                # 첫 번째 주는 이미 계산됨
-                schedule_date = current_date
-            else:
-                days_ahead = target_weekday - current_date.weekday()
-                if days_ahead <= 0:
-                    days_ahead += 7
-                schedule_date = current_date + timedelta(days=days_ahead)
+                # 시작일 이전의 날짜는 건너뛰기
+                if schedule_date < start_date:
+                    continue
 
-            schedule = Schedule(
-                student_id=student.id,
-                week_number=week,
-                scheduled_date=schedule_date
-            )
+                schedule_count += 1
+                schedule = Schedule(
+                    student_id=student.id,
+                    week_number=schedule_count,
+                    scheduled_date=schedule_date
+                )
 
-            self.data.schedules.append(schedule)
-
-            current_date = schedule_date + timedelta(days=1)
-            current_weekday_idx += 1
+                self.data.schedules.append(schedule)
 
     def _regenerate_schedules_for_student(self, student: Student):
         self.data.schedules = [s for s in self.data.schedules if s.student_id != student.id]
@@ -325,3 +373,119 @@ class DataManager(QObject):
             if schedule.id == schedule_id:
                 return schedule
         return None
+
+    def _initialize_google_sheets(self):
+        """구글 시트 초기화"""
+        webapp_url = "https://script.google.com/macros/s/AKfycbxT7joPlgV9cZv_kdo5uHXoyV22v8q-nWU-aRKAuOlRaq0eHqh3w68HMLyovy8LgJVbMw/exec"
+        self.sheets_manager.initialize(webapp_url)
+
+    def is_google_sheets_available(self) -> bool:
+        """구글 시트 연결 가능 여부 확인"""
+        return self.sheets_manager.is_initialized()
+
+    def test_google_sheets_connection(self) -> tuple[bool, str]:
+        """구글 시트 연결 테스트"""
+        if not self.is_google_sheets_available():
+            return False, "구글 시트가 초기화되지 않았습니다."
+
+        api = self.sheets_manager.get_api()
+        if api:
+            return api.test_connection()
+        return False, "API 인스턴스를 가져올 수 없습니다."
+
+    def sync_to_google_sheets(self) -> tuple[bool, str]:
+        """로컬 데이터를 구글 시트로 동기화"""
+        if not self.is_google_sheets_available():
+            return False, "구글 시트가 초기화되지 않았습니다."
+
+        try:
+            self.syncStatusChanged.emit("구글 시트로 동기화 중...")
+
+            api = self.sheets_manager.get_api()
+            if not api:
+                return False, "API 인스턴스를 가져올 수 없습니다."
+
+            success, message = api.sync_from_local_to_sheets(self.data)
+
+            if success:
+                self.syncStatusChanged.emit("동기화 완료")
+            else:
+                self.syncStatusChanged.emit("동기화 실패")
+
+            return success, message
+
+        except Exception as e:
+            error_message = f"동기화 중 오류 발생: {str(e)}"
+            self.syncStatusChanged.emit("동기화 실패")
+            return False, error_message
+
+    def sync_from_google_sheets(self) -> tuple[bool, str]:
+        """구글 시트에서 로컬로 데이터 동기화"""
+        if not self.is_google_sheets_available():
+            return False, "구글 시트가 초기화되지 않았습니다."
+
+        try:
+            self.syncStatusChanged.emit("구글 시트에서 데이터 가져오는 중...")
+
+            api = self.sheets_manager.get_api()
+            if not api:
+                return False, "API 인스턴스를 가져올 수 없습니다."
+
+            success, message, app_data = api.sync_from_sheets_to_local()
+
+            if success and app_data:
+                # 기존 데이터 백업 생성
+                backup_success = self.create_backup()
+                if not backup_success:
+                    print("기존 데이터 백업 생성 실패 - 계속 진행")
+
+                # 새 데이터로 교체
+                self.data = app_data
+
+                # 로컬에 저장
+                save_success = self.save_data()
+                if save_success:
+                    self.dataChanged.emit()
+                    self.syncStatusChanged.emit("동기화 완료")
+                    return True, f"{message} (로컬 저장 완료)"
+                else:
+                    self.syncStatusChanged.emit("로컬 저장 실패")
+                    return False, "구글 시트에서 가져왔지만 로컬 저장에 실패했습니다."
+            else:
+                self.syncStatusChanged.emit("동기화 실패")
+                return False, message
+
+        except Exception as e:
+            error_message = f"동기화 중 오류 발생: {str(e)}"
+            self.syncStatusChanged.emit("동기화 실패")
+            return False, error_message
+
+    def create_google_sheets_backup(self) -> tuple[bool, str, Optional[Dict]]:
+        """구글 시트에서 백업 생성"""
+        if not self.is_google_sheets_available():
+            return False, "구글 시트가 초기화되지 않았습니다.", None
+
+        try:
+            api = self.sheets_manager.get_api()
+            if not api:
+                return False, "API 인스턴스를 가져올 수 없습니다.", None
+
+            return api.create_backup()
+
+        except Exception as e:
+            return False, f"백업 생성 중 오류 발생: {str(e)}", None
+
+    def get_google_sheets_stats(self) -> tuple[bool, str, Optional[Dict]]:
+        """구글 시트 데이터 통계 조회"""
+        if not self.is_google_sheets_available():
+            return False, "구글 시트가 초기화되지 않았습니다.", None
+
+        try:
+            api = self.sheets_manager.get_api()
+            if not api:
+                return False, "API 인스턴스를 가져올 수 없습니다.", None
+
+            return api.get_data_stats()
+
+        except Exception as e:
+            return False, f"통계 조회 중 오류 발생: {str(e)}", None

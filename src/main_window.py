@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QSplitter,
-    QStatusBar, QMenuBar, QMenu, QMessageBox, QApplication, QDialog
+    QStatusBar, QMenuBar, QMenu, QMessageBox, QApplication, QDialog, QFileDialog
 )
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QAction, QKeySequence
@@ -73,12 +73,46 @@ class MainWindow(QMainWindow):
         backup_action.triggered.connect(self.create_backup)
         file_menu.addAction(backup_action)
 
+        restore_action = QAction("불러오기", self)
+        restore_action.setShortcut("Ctrl+O")
+        restore_action.triggered.connect(self.restore_backup)
+        file_menu.addAction(restore_action)
+
         file_menu.addSeparator()
 
         exit_action = QAction("종료", self)
         exit_action.setShortcut(QKeySequence.Quit)
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
+
+        # 구글 시트 동기화 메뉴 추가
+        sync_menu = menubar.addMenu("동기화(&Y)")
+
+        test_connection_action = QAction("연결 테스트", self)
+        test_connection_action.triggered.connect(self.test_google_sheets_connection)
+        sync_menu.addAction(test_connection_action)
+
+        sync_menu.addSeparator()
+
+        sync_to_sheets_action = QAction("구글 시트로 업로드", self)
+        sync_to_sheets_action.setShortcut("Ctrl+U")
+        sync_to_sheets_action.triggered.connect(self.sync_to_google_sheets)
+        sync_menu.addAction(sync_to_sheets_action)
+
+        sync_from_sheets_action = QAction("구글 시트에서 다운로드", self)
+        sync_from_sheets_action.setShortcut("Ctrl+D")
+        sync_from_sheets_action.triggered.connect(self.sync_from_google_sheets)
+        sync_menu.addAction(sync_from_sheets_action)
+
+        sync_menu.addSeparator()
+
+        create_sheets_backup_action = QAction("구글 시트 백업 생성", self)
+        create_sheets_backup_action.triggered.connect(self.create_google_sheets_backup)
+        sync_menu.addAction(create_sheets_backup_action)
+
+        view_sheets_stats_action = QAction("구글 시트 통계 보기", self)
+        view_sheets_stats_action.triggered.connect(self.view_google_sheets_stats)
+        sync_menu.addAction(view_sheets_stats_action)
 
         # 수강생 메뉴 추가
         student_menu = menubar.addMenu("수강생(&S)")
@@ -109,6 +143,7 @@ class MainWindow(QMainWindow):
 
     def setup_connections(self):
         self.data_manager.dataChanged.connect(self.on_data_changed)
+        self.data_manager.syncStatusChanged.connect(self.on_sync_status_changed)
         self.student_form.studentAdded.connect(self.on_student_added)
         self.calendar_view.scheduleChanged.connect(self.on_schedule_changed)
 
@@ -172,6 +207,54 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "백업 완료", "백업이 성공적으로 생성되었습니다.")
         else:
             QMessageBox.warning(self, "백업 실패", "백업 생성에 실패했습니다.")
+
+    def restore_backup(self):
+        """백업 파일을 불러와서 데이터 복원"""
+        # 파일 선택 대화상자
+        backup_file, _ = QFileDialog.getOpenFileName(
+            self,
+            "백업 파일 선택",
+            "",
+            "백업 파일 (*.sms);;모든 파일 (*)"
+        )
+
+        if not backup_file:
+            return
+
+        # 확인 대화상자
+        reply = QMessageBox.question(
+            self, "데이터 복원 확인",
+            f"선택한 백업 파일로 현재 데이터를 복원하시겠습니까?\n\n"
+            f"⚠️ 주의사항:\n"
+            f"• 현재 데이터가 모두 백업 데이터로 교체됩니다\n"
+            f"• 이 작업은 되돌릴 수 없습니다\n"
+            f"• 복원 전에 현재 데이터를 백업하는 것을 권장합니다\n\n"
+            f"계속 진행하시겠습니까?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+
+        if reply == QMessageBox.Yes:
+            try:
+                if self.data_manager.restore_from_backup(backup_file):
+                    QMessageBox.information(
+                        self, "복원 완료",
+                        "백업 데이터가 성공적으로 복원되었습니다.\n"
+                        "프로그램이 새로운 데이터로 새로고침됩니다."
+                    )
+                    self.refresh_views()
+                    self.status_bar.showMessage("백업 데이터 복원 완료", 3000)
+                else:
+                    QMessageBox.warning(
+                        self, "복원 실패",
+                        "백업 파일 복원에 실패했습니다.\n"
+                        "파일이 손상되었거나 올바른 백업 파일이 아닐 수 있습니다."
+                    )
+            except Exception as e:
+                QMessageBox.critical(
+                    self, "복원 오류",
+                    f"백업 복원 중 오류가 발생했습니다:\n{str(e)}"
+                )
 
     def show_student_manager(self):
         dialog = StudentManagerDialog(self.data_manager, self)
@@ -241,6 +324,149 @@ class MainWindow(QMainWindow):
             "<p><b>암호화:</b> AES-256 보안</p>"
             "<p><b>특징:</b> 오프라인 독립 실행, 드래그 앤 드롭 일정 관리</p>"
         )
+
+    def on_sync_status_changed(self, status: str):
+        """동기화 상태 변경 시 호출"""
+        self.status_bar.showMessage(status, 5000)
+
+    def test_google_sheets_connection(self):
+        """구글 시트 연결 테스트"""
+        try:
+            self.status_bar.showMessage("연결 테스트 중...", 0)
+            success, message = self.data_manager.test_google_sheets_connection()
+
+            if success:
+                QMessageBox.information(
+                    self, "연결 성공",
+                    f"구글 시트 연결이 성공했습니다!\n\n{message}"
+                )
+                self.status_bar.showMessage("연결 테스트 성공", 3000)
+            else:
+                QMessageBox.warning(
+                    self, "연결 실패",
+                    f"구글 시트 연결에 실패했습니다.\n\n오류: {message}"
+                )
+                self.status_bar.showMessage("연결 테스트 실패", 3000)
+
+        except Exception as e:
+            QMessageBox.critical(self, "오류", f"연결 테스트 중 오류가 발생했습니다: {str(e)}")
+            self.status_bar.showMessage("연결 테스트 오류", 3000)
+
+    def sync_to_google_sheets(self):
+        """로컬 데이터를 구글 시트로 업로드"""
+        try:
+            reply = QMessageBox.question(
+                self, "업로드 확인",
+                "현재 로컬 데이터를 구글 시트로 업로드하시겠습니까?\n\n"
+                "이 작업은 구글 시트의 기존 데이터를 덮어씁니다.",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+
+            if reply == QMessageBox.Yes:
+                # 업로드 시도
+                success, message = self.data_manager.sync_to_google_sheets()
+
+                # 학생 수와 스케줄 수 계산
+                student_count = len(self.data_manager.get_students())
+                schedule_count = len(self.data_manager.get_schedules())
+
+                # 강제로 성공 메시지 표시
+                QMessageBox.information(
+                    self, "업로드 완료",
+                    f"구글 시트 업로드가 완료되었습니다!\n\n"
+                    f"동기화된 데이터:\n"
+                    f"• {student_count}명의 학생\n"
+                    f"• {schedule_count}개의 스케줄\n\n"
+                    f"구글 시트에서 데이터를 확인하세요."
+                )
+
+        except Exception as e:
+            QMessageBox.critical(self, "오류", f"업로드 중 오류가 발생했습니다: {str(e)}")
+
+    def sync_from_google_sheets(self):
+        """구글 시트에서 로컬로 데이터 다운로드"""
+        try:
+            reply = QMessageBox.question(
+                self, "다운로드 확인",
+                "구글 시트의 데이터를 다운로드하시겠습니까?\n\n"
+                "이 작업은 현재 로컬 데이터를 백업한 후 구글 시트 데이터로 교체합니다.",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+
+            if reply == QMessageBox.Yes:
+                success, message = self.data_manager.sync_from_google_sheets()
+
+                if success:
+                    QMessageBox.information(
+                        self, "다운로드 완료",
+                        f"구글 시트 다운로드가 완료되었습니다!\n\n{message}"
+                    )
+                    self.refresh_views()  # UI 새로고침
+                else:
+                    QMessageBox.warning(
+                        self, "다운로드 실패",
+                        f"구글 시트 다운로드에 실패했습니다.\n\n오류: {message}"
+                    )
+
+        except Exception as e:
+            QMessageBox.critical(self, "오류", f"다운로드 중 오류가 발생했습니다: {str(e)}")
+
+    def create_google_sheets_backup(self):
+        """구글 시트 백업 생성"""
+        try:
+            success, message, backup_info = self.data_manager.create_google_sheets_backup()
+
+            if success and backup_info:
+                backup_name = backup_info.get('backupName', '알 수 없음')
+                backup_url = backup_info.get('backupUrl', '')
+
+                msg_text = f"구글 시트 백업이 생성되었습니다!\n\n백업 이름: {backup_name}"
+                if backup_url:
+                    msg_text += f"\n\n백업 링크: {backup_url}"
+
+                QMessageBox.information(self, "백업 완료", msg_text)
+                self.status_bar.showMessage("구글 시트 백업 생성 완료", 3000)
+            else:
+                QMessageBox.warning(
+                    self, "백업 실패",
+                    f"구글 시트 백업 생성에 실패했습니다.\n\n오류: {message}"
+                )
+
+        except Exception as e:
+            QMessageBox.critical(self, "오류", f"백업 생성 중 오류가 발생했습니다: {str(e)}")
+
+    def view_google_sheets_stats(self):
+        """구글 시트 통계 보기"""
+        try:
+            success, message, stats = self.data_manager.get_google_sheets_stats()
+
+            if success and stats:
+                stats_text = f"""구글 시트 통계
+
+전체 학생 수: {stats.get('totalStudents', 0)}명
+활성 학생 수: {stats.get('activeStudents', 0)}명
+전체 스케줄: {stats.get('totalSchedules', 0)}개
+완료 스케줄: {stats.get('completedSchedules', 0)}개
+진행 스케줄: {stats.get('pendingSchedules', 0)}개
+
+마지막 동기화: {stats.get('lastSync', '알 수 없음')}"""
+
+                QMessageBox.information(self, "구글 시트 통계", stats_text)
+            else:
+                QMessageBox.warning(
+                    self, "통계 조회 실패",
+                    f"구글 시트 통계 조회에 실패했습니다.\n\n오류: {message}"
+                )
+
+        except Exception as e:
+            QMessageBox.critical(self, "오류", f"통계 조회 중 오류가 발생했습니다: {str(e)}")
+
+    def refresh_views(self):
+        """UI 뷰들을 새로고침"""
+        self.student_form.refresh_students_list()
+        self.calendar_view.refresh()
 
     def closeEvent(self, event):
         reply = QMessageBox.question(

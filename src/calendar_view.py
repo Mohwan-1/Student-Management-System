@@ -38,7 +38,7 @@ class ScheduleItem(QFrame):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(4, 2, 4, 2)
 
-        text = f"{student.name} {schedule.week_number}주차"
+        text = f"{student.name} {schedule.week_number}강"
         if schedule.is_completed:
             text += " ✓"
         # 메모가 존재하고 비어있지 않으면 아이콘 표시
@@ -446,7 +446,7 @@ class CalendarView(QWidget):
             new_status = not schedule.is_completed
             if self.data_manager.mark_schedule_completed(schedule_id, new_status):
                 status_text = "완료" if new_status else "미완료"
-                self.scheduleChanged.emit(f"'{schedule.week_number}주차' 일정이 {status_text}로 변경되었습니다.")
+                self.scheduleChanged.emit(f"'{schedule.week_number}강' 일정이 {status_text}로 변경되었습니다.")
                 self.load_schedules()
 
     def show_memo_dialog(self, schedule_id: str):
@@ -476,9 +476,9 @@ class CalendarView(QWidget):
             if success:
                 # 성공 시 메시지 표시 및 화면 새로고침
                 if new_memo.strip():
-                    self.scheduleChanged.emit(f"'{student.name} {schedule.week_number}주차' 메모가 저장되었습니다.")
+                    self.scheduleChanged.emit(f"'{student.name} {schedule.week_number}강' 메모가 저장되었습니다.")
                 else:
-                    self.scheduleChanged.emit(f"'{student.name} {schedule.week_number}주차' 메모가 삭제되었습니다.")
+                    self.scheduleChanged.emit(f"'{student.name} {schedule.week_number}강' 멤모가 삭제되었습니다.")
 
                 # 스케줄 다시 로드하여 메모 아이콘 업데이트
                 self.load_schedules()

@@ -48,7 +48,7 @@ class StudentForm(QWidget):
         self.course_combo = QComboBox()
         self.course_combo.setMinimumHeight(35)
         for i in range(1, 11):
-            self.course_combo.addItem(f"{i}주차", i)
+            self.course_combo.addItem(f"{i}강", i)
         form_layout.addWidget(self.course_combo)
 
         self.weekdays_label = QLabel("수강 요일 *")
@@ -389,7 +389,7 @@ class StudentForm(QWidget):
 
                 weekdays_text = ", ".join(student.weekdays)
                 students_text.append(
-                    f"• {student.name} ({student.total_weeks}주차)\n"
+                    f"• {student.name} ({student.total_weeks}강)\n"
                     f"  요일: {weekdays_text}\n"
                     f"  진도: {progress}"
                 )

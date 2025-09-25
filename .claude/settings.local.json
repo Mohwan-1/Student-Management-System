@@ -10,7 +10,13 @@
       "Bash(..venvScriptsactivate)",
       "Bash(.venvScriptsactivate.bat)",
       "Bash(powershell:*)",
-      "Bash(run.bat)"
+      "Bash(run.bat)",
+      "Bash(pip install:*)",
+      "Bash(pyinstaller:*)",
+      "Bash(ren:*)",
+      "Bash(move main.exe Student_Management_System.exe)",
+      "Bash(git commit:*)",
+      "Read(//c/Users/sdisd/Desktop/**)"
     ],
     "deny": [],
     "ask": []

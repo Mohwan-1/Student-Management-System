@@ -139,7 +139,7 @@ class StudentManagerDialog(QDialog):
             self.table.setItem(row, 1, name_item)
 
             # 총 과정
-            course_item = QTableWidgetItem(f"{student.total_weeks}주차")
+            course_item = QTableWidgetItem(f"{student.total_weeks}강")
             self.table.setItem(row, 2, course_item)
 
             # 수강 요일
@@ -159,7 +159,7 @@ class StudentManagerDialog(QDialog):
                 # 시작일부터 오늘까지의 경과 일수
                 days_passed = (today - student.start_date).days
 
-                # 경과 주차 계산 (1주차부터 시작하므로 +1)
+                # 경과 강수 계산 (1강부터 시작하므로 +1)
                 current_week = min(days_passed // 7 + 1, student.total_weeks)
 
                 # 진도율 계산

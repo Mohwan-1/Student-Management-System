@@ -34,7 +34,17 @@ class Student:
         student.name = data.get("name", "")
         student.total_weeks = data.get("total_weeks", 1)
         student.weekdays = data.get("weekdays", [])
-        student.start_date = date.fromisoformat(data.get("start_date", date.today().isoformat()))
+
+        # 특별한 날짜 처리 - Google Sheets에서 오는 데이터는 -1일 보정 필요
+        start_date_str = data.get("start_date", date.today().isoformat())
+        try:
+            parsed_date = date.fromisoformat(start_date_str)
+            # Google Sheets 타임존 이슈로 인한 -1일 보정
+            from datetime import timedelta
+            student.start_date = parsed_date + timedelta(days=1)
+        except (ValueError, TypeError):
+            student.start_date = date.today()
+
         student.created_at = datetime.fromisoformat(data.get("created_at", datetime.now().isoformat()))
         student.is_active = data.get("is_active", True)
         student.color = data.get("color", "#FF5733")
@@ -70,7 +80,17 @@ class Schedule:
         schedule.id = data.get("id", str(uuid.uuid4()))
         schedule.student_id = data.get("student_id", "")
         schedule.week_number = data.get("week_number", 1)
-        schedule.scheduled_date = date.fromisoformat(data.get("scheduled_date", date.today().isoformat()))
+
+        # 특별한 날짜 처리 - Google Sheets에서 오는 데이터는 -1일 보정 필요
+        scheduled_date_str = data.get("scheduled_date", date.today().isoformat())
+        try:
+            parsed_date = date.fromisoformat(scheduled_date_str)
+            # Google Sheets 타임존 이슈로 인한 -1일 보정
+            from datetime import timedelta
+            schedule.scheduled_date = parsed_date + timedelta(days=1)
+        except (ValueError, TypeError):
+            schedule.scheduled_date = date.today()
+
         schedule.is_completed = data.get("is_completed", False)
         schedule.memo = data.get("memo", "")
         schedule.created_at = datetime.fromisoformat(data.get("created_at", datetime.now().isoformat()))
