@@ -460,32 +460,3 @@ class DataManager(QObject):
             self.syncStatusChanged.emit("동기화 실패")
             return False, error_message
 
-    def create_google_sheets_backup(self) -> tuple[bool, str, Optional[Dict]]:
-        """구글 시트에서 백업 생성"""
-        if not self.is_google_sheets_available():
-            return False, "구글 시트가 초기화되지 않았습니다.", None
-
-        try:
-            api = self.sheets_manager.get_api()
-            if not api:
-                return False, "API 인스턴스를 가져올 수 없습니다.", None
-
-            return api.create_backup()
-
-        except Exception as e:
-            return False, f"백업 생성 중 오류 발생: {str(e)}", None
-
-    def get_google_sheets_stats(self) -> tuple[bool, str, Optional[Dict]]:
-        """구글 시트 데이터 통계 조회"""
-        if not self.is_google_sheets_available():
-            return False, "구글 시트가 초기화되지 않았습니다.", None
-
-        try:
-            api = self.sheets_manager.get_api()
-            if not api:
-                return False, "API 인스턴스를 가져올 수 없습니다.", None
-
-            return api.get_data_stats()
-
-        except Exception as e:
-            return False, f"통계 조회 중 오류 발생: {str(e)}", None

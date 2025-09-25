@@ -28,20 +28,24 @@ class Student:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Student':
+    def from_dict(cls, data: Dict[str, Any], from_google_sheets: bool = False) -> 'Student':
         student = cls()
         student.id = data.get("id", str(uuid.uuid4()))
         student.name = data.get("name", "")
         student.total_weeks = data.get("total_weeks", 1)
         student.weekdays = data.get("weekdays", [])
 
-        # 특별한 날짜 처리 - Google Sheets에서 오는 데이터는 -1일 보정 필요
+        # 날짜 처리 - Google Sheets에서 오는 데이터만 -1일 보정 필요
         start_date_str = data.get("start_date", date.today().isoformat())
         try:
             parsed_date = date.fromisoformat(start_date_str)
-            # Google Sheets 타임존 이슈로 인한 -1일 보정
-            from datetime import timedelta
-            student.start_date = parsed_date + timedelta(days=1)
+            if from_google_sheets:
+                # Google Sheets 타임존 이슈로 인한 -1일 보정
+                from datetime import timedelta
+                student.start_date = parsed_date + timedelta(days=1)
+            else:
+                # 로컬 데이터는 보정 없이 그대로 사용
+                student.start_date = parsed_date
         except (ValueError, TypeError):
             student.start_date = date.today()
 
@@ -75,19 +79,23 @@ class Schedule:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Schedule':
+    def from_dict(cls, data: Dict[str, Any], from_google_sheets: bool = False) -> 'Schedule':
         schedule = cls()
         schedule.id = data.get("id", str(uuid.uuid4()))
         schedule.student_id = data.get("student_id", "")
         schedule.week_number = data.get("week_number", 1)
 
-        # 특별한 날짜 처리 - Google Sheets에서 오는 데이터는 -1일 보정 필요
+        # 날짜 처리 - Google Sheets에서 오는 데이터만 -1일 보정 필요
         scheduled_date_str = data.get("scheduled_date", date.today().isoformat())
         try:
             parsed_date = date.fromisoformat(scheduled_date_str)
-            # Google Sheets 타임존 이슈로 인한 -1일 보정
-            from datetime import timedelta
-            schedule.scheduled_date = parsed_date + timedelta(days=1)
+            if from_google_sheets:
+                # Google Sheets 타임존 이슈로 인한 -1일 보정
+                from datetime import timedelta
+                schedule.scheduled_date = parsed_date + timedelta(days=1)
+            else:
+                # 로컬 데이터는 보정 없이 그대로 사용
+                schedule.scheduled_date = parsed_date
         except (ValueError, TypeError):
             schedule.scheduled_date = date.today()
 
@@ -119,10 +127,10 @@ class AppData:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'AppData':
+    def from_dict(cls, data: Dict[str, Any], from_google_sheets: bool = False) -> 'AppData':
         app_data = cls()
-        app_data.students = [Student.from_dict(s) for s in data.get("students", [])]
-        app_data.schedules = [Schedule.from_dict(s) for s in data.get("schedules", [])]
+        app_data.students = [Student.from_dict(s, from_google_sheets) for s in data.get("students", [])]
+        app_data.schedules = [Schedule.from_dict(s, from_google_sheets) for s in data.get("schedules", [])]
         app_data.metadata = data.get("metadata", {
             "version": "1.0",
             "last_backup": datetime.now().isoformat()

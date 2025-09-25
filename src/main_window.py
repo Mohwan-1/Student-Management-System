@@ -104,15 +104,6 @@ class MainWindow(QMainWindow):
         sync_from_sheets_action.triggered.connect(self.sync_from_google_sheets)
         sync_menu.addAction(sync_from_sheets_action)
 
-        sync_menu.addSeparator()
-
-        create_sheets_backup_action = QAction("구글 시트 백업 생성", self)
-        create_sheets_backup_action.triggered.connect(self.create_google_sheets_backup)
-        sync_menu.addAction(create_sheets_backup_action)
-
-        view_sheets_stats_action = QAction("구글 시트 통계 보기", self)
-        view_sheets_stats_action.triggered.connect(self.view_google_sheets_stats)
-        sync_menu.addAction(view_sheets_stats_action)
 
         # 수강생 메뉴 추가
         student_menu = menubar.addMenu("수강생(&S)")
@@ -413,55 +404,6 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "오류", f"다운로드 중 오류가 발생했습니다: {str(e)}")
 
-    def create_google_sheets_backup(self):
-        """구글 시트 백업 생성"""
-        try:
-            success, message, backup_info = self.data_manager.create_google_sheets_backup()
-
-            if success and backup_info:
-                backup_name = backup_info.get('backupName', '알 수 없음')
-                backup_url = backup_info.get('backupUrl', '')
-
-                msg_text = f"구글 시트 백업이 생성되었습니다!\n\n백업 이름: {backup_name}"
-                if backup_url:
-                    msg_text += f"\n\n백업 링크: {backup_url}"
-
-                QMessageBox.information(self, "백업 완료", msg_text)
-                self.status_bar.showMessage("구글 시트 백업 생성 완료", 3000)
-            else:
-                QMessageBox.warning(
-                    self, "백업 실패",
-                    f"구글 시트 백업 생성에 실패했습니다.\n\n오류: {message}"
-                )
-
-        except Exception as e:
-            QMessageBox.critical(self, "오류", f"백업 생성 중 오류가 발생했습니다: {str(e)}")
-
-    def view_google_sheets_stats(self):
-        """구글 시트 통계 보기"""
-        try:
-            success, message, stats = self.data_manager.get_google_sheets_stats()
-
-            if success and stats:
-                stats_text = f"""구글 시트 통계
-
-전체 학생 수: {stats.get('totalStudents', 0)}명
-활성 학생 수: {stats.get('activeStudents', 0)}명
-전체 스케줄: {stats.get('totalSchedules', 0)}개
-완료 스케줄: {stats.get('completedSchedules', 0)}개
-진행 스케줄: {stats.get('pendingSchedules', 0)}개
-
-마지막 동기화: {stats.get('lastSync', '알 수 없음')}"""
-
-                QMessageBox.information(self, "구글 시트 통계", stats_text)
-            else:
-                QMessageBox.warning(
-                    self, "통계 조회 실패",
-                    f"구글 시트 통계 조회에 실패했습니다.\n\n오류: {message}"
-                )
-
-        except Exception as e:
-            QMessageBox.critical(self, "오류", f"통계 조회 중 오류가 발생했습니다: {str(e)}")
 
     def refresh_views(self):
         """UI 뷰들을 새로고침"""

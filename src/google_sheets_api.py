@@ -122,7 +122,7 @@ class GoogleSheetsAPI:
 
                 for student_dict in students_data:
                     try:
-                        student = Student.from_dict(student_dict)
+                        student = Student.from_dict(student_dict, from_google_sheets=True)
                         students.append(student)
                     except Exception as e:
                         print(f"학생 데이터 파싱 오류: {e}")
@@ -146,7 +146,7 @@ class GoogleSheetsAPI:
 
                 for schedule_dict in schedules_data:
                     try:
-                        schedule = Schedule.from_dict(schedule_dict)
+                        schedule = Schedule.from_dict(schedule_dict, from_google_sheets=True)
                         schedules.append(schedule)
                     except Exception as e:
                         print(f"스케줄 데이터 파싱 오류: {e}")
@@ -200,33 +200,6 @@ class GoogleSheetsAPI:
         except Exception as e:
             return False, f"학생 삭제 실패: {str(e)}"
 
-    def create_backup(self) -> Tuple[bool, str, Optional[Dict]]:
-        """백업 생성"""
-        try:
-            result = self._make_request('create_backup')
-
-            if result['success']:
-                backup_info = result.get('data', {})
-                return True, result['message'], backup_info
-            else:
-                return False, result['message'], None
-
-        except Exception as e:
-            return False, f"백업 생성 실패: {str(e)}", None
-
-    def get_data_stats(self) -> Tuple[bool, str, Optional[Dict]]:
-        """데이터 통계 조회"""
-        try:
-            result = self._make_request('get_data_stats')
-
-            if result['success']:
-                stats = result.get('data', {})
-                return True, result['message'], stats
-            else:
-                return False, result['message'], None
-
-        except Exception as e:
-            return False, f"통계 조회 실패: {str(e)}", None
 
     def sync_from_local_to_sheets(self, app_data: AppData) -> Tuple[bool, str]:
         """로컬 데이터를 구글 시트로 업로드"""

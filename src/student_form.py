@@ -373,19 +373,16 @@ class StudentForm(QWidget):
             for student in students:
                 schedules = self.data_manager.get_schedules_for_student(student.id)
 
-                # 오늘 날짜 기준으로 진도 계산
+                # 오늘 날짜 기준으로 진행된 강수 계산
                 today = date.today()
                 past_schedules = [s for s in schedules if s.scheduled_date <= today]
-                completed = sum(1 for s in past_schedules if s.is_completed)
-                expected_completed = len(past_schedules)  # 오늘까지 완료되어야 할 수업 수
-                total = len(schedules)
+                completed_lessons = len(past_schedules)  # 오늘까지 진행된 강수
 
-                # 진도율 계산 (오늘까지의 수업 기준)
-                if expected_completed > 0:
-                    progress_rate = round((completed / expected_completed) * 100)
-                    progress = f"{completed}/{expected_completed} ({progress_rate}%)"
+                # 진도 표시: "N강 완료" 형식
+                if completed_lessons > 0:
+                    progress = f"{completed_lessons}강 완료"
                 else:
-                    progress = f"0/{total} (아직 시작 전)"
+                    progress = "아직 시작 전"
 
                 weekdays_text = ", ".join(student.weekdays)
                 students_text.append(
